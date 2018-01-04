@@ -1,5 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015 Bean Core www.bitbean.org
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -109,6 +110,23 @@ void CWalletDB::ListAccountCreditDebit(const string& strAccount, list<CAccountin
     pcursor->close();
 }
 
+//#########AGREGADO
+bool CWalletDB::WriteWatchOnly(const CScript &dest)
+{nWalletDBUpdated++;
+
+	bool fl1=Write(std::make_pair(std::string("watchs"), dest), '1',true);
+    nWalletDBUpdated++;
+
+    return fl1;
+}
+
+bool CWalletDB::EraseWatchOnly(const CScript &dest)
+{	nWalletDBUpdated++;
+
+    return Erase(std::make_pair(std::string("watchs"), dest));
+}
+//#########FIN DE AGREGADO
+
 
 DBErrors
 CWalletDB::ReorderTransactions(CWallet* pwallet)
@@ -213,7 +231,7 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
         {
             string strAddress;
             ssKey >> strAddress;
-            ssValue >> pwallet->mapAddressBook[CBitcoinAddress(strAddress).Get()];
+            ssValue >> pwallet->mapAddressBook[CBitbeanAddress(strAddress).Get()];
         }
         else if (strType == "tx")
         {
@@ -277,6 +295,15 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
                     wss.fAnyUnordered = true;
             }
         }
+        else if (strType == "watchs")
+              {
+                  CScript script;
+                  ssKey >> script;
+                  char fYes;
+                  ssValue >> fYes;
+                  if (fYes == '1'){
+                      pwallet->LoadWatchOnly(script);}
+              }
         else if (strType == "key" || strType == "wkey")
         {
             vector<unsigned char> vchPubKey;
